@@ -1,0 +1,14 @@
+body{
+    font-family: sans-serif;
+    padding: 5px;   
+}
+
+h1{
+    color: #9c0505;
+}
+
+textarea{
+    border: 2px solid black;
+    border-radius: 6px;
+    width: 100%;
+}
