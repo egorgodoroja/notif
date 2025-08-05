@@ -10,7 +10,7 @@ import "package:flutter_local_notifications/flutter_local_notifications.dart";
 void main() {
   runApp(const MyApp());
   if(Platform.isIOS){
-    //initNotifications();
+    initNotifications();
   }
   startServer();
 }
