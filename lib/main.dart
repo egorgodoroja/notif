@@ -4,12 +4,13 @@ import "dart:convert";
 
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
+import "package:network_info_plus/network_info_plus.dart";
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
 
 void main() {
   runApp(const MyApp());
   if(Platform.isIOS){
-    initNotifications();
+    //initNotifications();
   }
   startServer();
 }
@@ -39,36 +40,14 @@ Future<void> initNotifications() async {
       );
 }
 
-List<Rx> rxs = [];
-
-class Rx<T> {
-  T _value;
-  Rx(this._value){
-    rxs.add(this);
-  }
-  StreamController _controller = StreamController();
-  set value(T newValue) {
-    _value = newValue;
-    _controller.add(1);
-  }
-  T get value => _value;
-  Stream get stream => _controller.stream;
-}
-
-
-extension MyObject on Object{
-  Rx get obs => Rx(this);
-}
-
-final address = Rx("");
-
-final messages = <String>[].obs;
-
+String address = "localhost";
+List<String> messages = [];
 void startServer()async{
-  final String htmlContent = await rootBundle.loadString('assets/index.html');
-  final String cssContent = await rootBundle.loadString('assets/style.css');
+  NetworkInfo networkInfo = NetworkInfo();
+  final String htmlContent = await rootBundle.loadString('html/index.html');
+  final String cssContent = await rootBundle.loadString('html/style.css');
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 8080);
-  address.value = server.address.address;
+  address = await networkInfo.getWifiIP() ?? "localhost";
   await for(HttpRequest request in server) {
     if(request.method=="GET"){
         switch(request.uri.path) {
@@ -78,7 +57,7 @@ void startServer()async{
             request.response.close();
             break;
           case '/style.css':
-            request.response.headers.contentType = ContentType("text", "css");
+            request.response.headers.contentType = ContentType("text", "css", charset: "utf-8");
             request.response.write(cssContent);
             request.response.close();
             break;
@@ -94,6 +73,7 @@ void startServer()async{
         // Преобразуем строку в Map
         final formData = Uri.splitQueryString(content);
         final message = formData['message'] ?? 'неизвестно';
+        messages.add(message);
         
         await notifications.show(
         0,
@@ -139,13 +119,12 @@ class _HomeState extends State<Home>{
   @override
   void initState() {
     super.initState();
-    for (var rx in rxs) {
-      rx.stream.listen((_) {
-        setState(() {});
+    Timer.periodic(const Duration(seconds: 2), (timer) {
+      setState(() {
+        
       });
-    }
+    });
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,13 +133,13 @@ class _HomeState extends State<Home>{
       ),
       body: Column(
         children: [
-          Text("Server address: ${address.value}"),
+          Text("Server address: $address"),
           Expanded(
             child: ListView.builder(
-              itemCount: messages.value.length,
+              itemCount: messages.length,
               itemBuilder: (context, index) {
                 return ListTile(
-                  title: Text(messages.value[index]),
+                  title: Text(messages[index]),
                 );
               },
             ),
